@@ -1,8 +1,13 @@
 
 import { useMemo, useState } from "react";
+import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import ProductCard from "./components/ProductCard";
 import { addItem, removeItem } from "./store/cartSlice";
+import ProductCard from "./components/ProductCard";
+import CheckoutPage from "./pages/CheckoutPage";
+import AddressPage from "./pages/AddressPage";
+import PaymentPage from "./pages/PaymentPage";
+import OrderSuccessPage from "./pages/OrderSuccessPage";
 import "./App.css";
 
 const products = [
@@ -54,17 +59,17 @@ const products = [
     oldPrice: 27999,
     tag: "Premium",
     image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=900&auto=format&fit=crop",
-    description: "A powerful laptop for professionals and creators."
+    description: "A premium laptop for professional productivity."
   },
   {
     id: 6,
     name: "Samsung Galaxy Smartphone",
     category: "Phones",
     price: 15999,
-    oldPrice: 18999,
-    tag: "New",
+    oldPrice: 17999,
+    tag: "Popular",
     image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=900&auto=format&fit=crop",
-    description: "A modern smartphone with a vibrant display."
+    description: "A powerful Android smartphone for everyday use."
   },
   {
     id: 7,
@@ -74,79 +79,94 @@ const products = [
     oldPrice: 3999,
     tag: "Sale",
     image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=900&auto=format&fit=crop",
-    description: "Track your fitness and stay connected."
+    description: "Track your activity with a modern smartwatch."
   },
   {
     id: 8,
-    name: "Wireless Bluetooth Speaker",
+    name: "Wireless Headphones",
     category: "Accessories",
     price: 1999,
-    oldPrice: 2599,
-    tag: "Popular",
-    image: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=900&auto=format&fit=crop",
-    description: "Portable wireless sound for everyday listening."
+    oldPrice: 2799,
+    tag: "Deal",
+    image: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=900&auto=format&fit=crop",
+    description: "Wireless headphones for entertainment and travel."
   }
 ];
 
-const categories = ["All Products", "Laptops", "Phones", "Watches", "Accessories"];
+const categories = [
+  "All Products",
+  "Laptops",
+  "Phones",
+  "Watches",
+  "Accessories"
+];
 
 const money = (amount) =>
   new Intl.NumberFormat("en-ZA", {
     style: "currency",
-    currency: "ZAR",
-    maximumFractionDigits: 0
-  }).format(amount);
+    currency: "ZAR"
+  }).format(Number(amount) || 0);
 
-export default function App() {
+function Storefront() {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
-  const cart = useSelector((state) => state.cart.cartItems || []);
+  const cartState = useSelector((state) => state.cart);
+  const cart = Array.isArray(cartState)
+    ? cartState
+    : cartState?.items || [];
 
-  const [category, setCategory] = useState("All Products");
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All Products");
   const [sort, setSort] = useState("featured");
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState("");
 
   const visibleProducts = useMemo(() => {
     let result = products.filter((product) => {
-      const matchesCategory =
-        category === "All Products" || product.category === category;
-
       const matchesSearch = product.name
         .toLowerCase()
         .includes(search.toLowerCase());
 
-      return matchesCategory && matchesSearch;
+      const matchesCategory =
+        category === "All Products" ||
+        product.category === category;
+
+      return matchesSearch && matchesCategory;
     });
 
-    if (sort === "low") result.sort((a, b) => a.price - b.price);
-    if (sort === "high") result.sort((a, b) => b.price - a.price);
+    if (sort === "low") {
+      result = [...result].sort((a, b) => a.price - b.price);
+    }
+
+    if (sort === "high") {
+      result = [...result].sort((a, b) => b.price - a.price);
+    }
 
     return result;
-  }, [category, search, sort]);
+  }, [search, category, sort]);
 
   const cartCount = cart.reduce(
-    (total, item) => total + (item.quantity || 1),
+    (sum, item) => sum + (Number(item.quantity) || 1),
     0
   );
 
   const cartTotal = cart.reduce(
-    (total, item) => total + item.price * (item.quantity || 1),
+    (sum, item) =>
+      sum + Number(item.price || 0) * (Number(item.quantity) || 1),
     0
   );
 
   function addToCart(product) {
     dispatch(addItem(product));
-    setNotice(`${product.name} added to cart!`);
+    setNotice(`${product.name} added to cart`);
   }
 
   function removeFromCart(product) {
     dispatch(removeItem(product.id));
   }
 
-  function selectCategory(nextCategory) {
-    setCategory(nextCategory);
+  function selectCategory(value) {
+    setCategory(value);
     setMenuOpen(false);
     document.getElementById("products")?.scrollIntoView({
       behavior: "smooth"
@@ -156,90 +176,101 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="rounded-lg border border-slate-200 px-3 py-2"
-              aria-label="Toggle menu"
-            >
-              ☰
-            </button>
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="rounded-xl border border-slate-200 px-4 py-3 text-xl"
+            aria-label="Toggle menu"
+          >
+            ☰
+          </button>
 
-            <a href="#" className="text-2xl font-black">
-              techstore<span className="text-blue-600">.</span>
-            </a>
-          </div>
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="text-2xl font-black"
+          >
+            techstore<span className="text-blue-600">.</span>
+          </button>
 
-          <nav className="hidden gap-6 font-medium md:flex">
-            <a href="#" className="hover:text-blue-600">Home</a>
-            <a href="#products" className="hover:text-blue-600">Shop</a>
-            <a href="#categories" className="hover:text-blue-600">Categories</a>
+          <nav className="hidden gap-6 font-semibold md:flex">
+            <a href="#home">Home</a>
+            <a href="#products">Shop</a>
+            <a href="#categories">Categories</a>
           </nav>
 
-          <a
-            href="#cart"
-            className="rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white"
+          <button
+            onClick={() =>
+              document.getElementById("cart")?.scrollIntoView({
+                behavior: "smooth"
+              })
+            }
+            className="rounded-xl bg-slate-950 px-5 py-3 font-bold text-white"
           >
             Cart ({cartCount})
-          </a>
+          </button>
         </div>
+
+        {menuOpen && (
+          <div className="border-t bg-white px-6 py-5 shadow-lg">
+            <div className="mx-auto flex max-w-7xl flex-col gap-4">
+              {categories.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => selectCategory(item)}
+                  className="text-left font-semibold hover:text-blue-600"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </header>
 
-      {menuOpen && (
-        <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-white p-6 shadow-2xl">
-          <div className="mb-8 flex items-center justify-between">
-            <h2 className="text-xl font-bold">Categories</h2>
-            <button onClick={() => setMenuOpen(false)}>✕</button>
-          </div>
-
-          {categories.map((item) => (
-            <button
-              key={item}
-              onClick={() => selectCategory(item)}
-              className="block w-full rounded-lg px-4 py-3 text-left hover:bg-slate-100"
-            >
-              {item}
-            </button>
-          ))}
-        </aside>
+      {notice && (
+        <div className="mx-auto mt-4 flex max-w-7xl items-center justify-between rounded-xl bg-blue-50 px-5 py-3 text-blue-800">
+          <span>{notice}</span>
+          <button onClick={() => setNotice("")}>✕</button>
+        </div>
       )}
 
       <main>
-        <section className="bg-slate-900 text-white">
-          <div className="mx-auto grid max-w-7xl items-center gap-10 px-6 py-16 md:grid-cols-2">
-            <div>
-              <p className="mb-4 font-semibold uppercase tracking-widest text-blue-300">
-                New season. New technology.
-              </p>
+        <section id="home" className="mx-auto max-w-7xl px-5 py-8">
+          <div className="overflow-hidden rounded-3xl bg-slate-950 text-white">
+            <div className="grid items-center gap-8 p-8 md:grid-cols-2 md:p-14">
+              <div>
+                <p className="font-bold tracking-widest text-blue-400">
+                  NEW SEASON. NEW TECHNOLOGY.
+                </p>
 
-              <h1 className="mb-6 text-4xl font-black leading-tight md:text-6xl">
-                Discover your next favourite tech.
-              </h1>
+                <h1 className="mt-6 text-4xl font-black leading-tight md:text-6xl">
+                  Discover your next favourite tech.
+                </h1>
 
-              <p className="mb-8 max-w-lg text-lg text-slate-300">
-                Explore laptops, smartphones, smartwatches and accessories
-                at great prices.
-              </p>
+                <p className="mt-6 text-lg text-slate-300">
+                  Explore laptops, smartphones, smartwatches and accessories
+                  at great prices.
+                </p>
 
-              <a
-                href="#products"
-                className="inline-block rounded-xl bg-blue-600 px-8 py-4 font-bold text-white hover:bg-blue-700"
-              >
-                Shop Now →
-              </a>
+                <a
+                  href="#products"
+                  className="mt-8 inline-block rounded-xl bg-blue-600 px-7 py-4 font-bold text-white hover:bg-blue-700"
+                >
+                  Shop Now
+                </a>
+              </div>
+
+              <img
+                src="https://images.unsplash.com/photo-1498049794561-7780e7231661?w=1200&auto=format&fit=crop"
+                alt="Technology products"
+                className="h-80 w-full rounded-2xl object-cover"
+              />
             </div>
-
-            <img
-              src="https://images.unsplash.com/photo-1498049794561-7780e7231661?w=1200&auto=format&fit=crop"
-              alt="Electronics collection"
-              className="h-80 w-full rounded-3xl object-cover"
-            />
           </div>
         </section>
 
-        <section id="categories" className="mx-auto max-w-7xl px-6 py-12">
-          <h2 className="mb-6 text-2xl font-black">Shop by Category</h2>
+        <section id="categories" className="mx-auto max-w-7xl px-5 py-8">
+          <h2 className="mb-6 text-3xl font-black">Shop by Category</h2>
 
           <div className="flex flex-wrap gap-3">
             {categories.map((item) => (
@@ -258,28 +289,27 @@ export default function App() {
           </div>
         </section>
 
-        <section id="products" className="mx-auto max-w-7xl px-6 py-12">
-          <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <section id="products" className="mx-auto max-w-7xl px-5 py-10">
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-3xl font-black">Featured Products</h2>
               <p className="mt-2 text-slate-500">
-                {visibleProducts.length} products available
+                Discover the latest technology.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
               <input
-                type="search"
-                placeholder="Search products..."
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3"
+                placeholder="Search products..."
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3"
               />
 
               <select
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3"
               >
                 <option value="featured">Featured</option>
                 <option value="low">Price: Low to High</option>
@@ -288,79 +318,90 @@ export default function App() {
             </div>
           </div>
 
-          {visibleProducts.length === 0 ? (
-            <p className="rounded-xl bg-white p-10 text-center">
-              No products found.
-            </p>
-          ) : (
+          {visibleProducts.length ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {visibleProducts.map((product) => (
                 <div key={product.id}>
-                  <ProductCard
-                    product={product}
-                    money={money}
-                    onAddToCart={addToCart}
-                  />
-
-                  <button
-                    onClick={() => setSelectedProduct(product)}
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold hover:bg-slate-100"
-                  >
-                    View Details
-                  </button>
+                 <div
+  onClick={(event) => {
+    if (event.target.closest("button")) return;
+    navigate(`/product/${product.id}`);
+  }}
+  className="cursor-pointer"
+>
+  <ProductCard
+    product={product}
+    money={money}
+    onAddToCart={addToCart}
+  />
+</div>
                 </div>
               ))}
             </div>
+          ) : (
+            <p className="rounded-xl bg-white p-10 text-center">
+              No products found.
+            </p>
           )}
         </section>
 
-        <section id="cart" className="mx-auto max-w-7xl px-6 py-12">
+        <section id="cart" className="mx-auto max-w-7xl px-5 py-12">
           <div className="rounded-3xl bg-white p-6 shadow-sm md:p-10">
             <h2 className="mb-6 text-3xl font-black">
               Shopping Cart ({cartCount})
             </h2>
 
             {cart.length === 0 ? (
-              <p className="text-slate-500">Your cart is empty.</p>
+              <p className="text-slate-500">
+                Your cart is empty. Add products to get started.
+              </p>
             ) : (
               <>
                 <div className="space-y-4">
                   {cart.map((item) => (
                     <div
                       key={item.id}
-                      className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 py-4"
+                      className="flex flex-wrap items-center justify-between gap-4 border-b pb-4"
                     >
-                      <div>
-                        <h3 className="font-bold">{item.name}</h3>
-                        <p className="text-sm text-slate-500">
-                          Quantity: {item.quantity || 1}
-                        </p>
+                      <div className="flex items-center gap-4">
+                        {item.image && (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="h-20 w-20 rounded-xl object-cover"
+                          />
+                        )}
+
+                        <div>
+                          <h3 className="font-bold">{item.name}</h3>
+                          <p className="text-slate-500">
+                            {money(item.price)} × {item.quantity || 1}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-5">
-                        <span className="font-bold">
-                          {money(item.price * (item.quantity || 1))}
-                        </span>
-
-                        <button
-                          onClick={() => removeFromCart(item)}
-                          className="font-semibold text-red-600"
-                        >
-                          Remove
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => removeFromCart(item)}
+                        className="rounded-xl border border-red-200 px-4 py-2 text-red-600"
+                      >
+                        Remove
+                      </button>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+                <div className="mt-8 flex flex-wrap items-center justify-between gap-5">
                   <p className="text-2xl font-black">
                     Total: {money(cartTotal)}
                   </p>
 
                   <button
-                    onClick={() => setNotice("Checkout integration is handled by Member 3.")}
-                    className="rounded-xl bg-blue-600 px-8 py-4 font-bold text-white"
+                    onClick={() =>
+                      navigate("/checkout", {
+                        state: { cartItems: cart, items: cart }
+                      })
+                    }
+                    className="rounded-xl bg-blue-600 px-8 py-4 font-bold text-white hover:bg-blue-700"
                   >
                     Proceed to Checkout
                   </button>
@@ -371,72 +412,97 @@ export default function App() {
         </section>
       </main>
 
-      {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 md:p-10">
-            <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute right-5 top-5 text-2xl"
-            >
-              ✕
-            </button>
-
-            <div className="grid gap-8 md:grid-cols-2">
-              <img
-                src={selectedProduct.image}
-                alt={selectedProduct.name}
-                className="w-full rounded-2xl object-cover"
-              />
-
-              <div>
-                <p className="font-semibold text-blue-600">
-                  {selectedProduct.category}
-                </p>
-
-                <h2 className="mt-3 text-3xl font-black">
-                  {selectedProduct.name}
-                </h2>
-
-                <p className="mt-4 text-slate-600">
-                  {selectedProduct.description}
-                </p>
-
-                <p className="mt-6 text-2xl font-black">
-                  {money(selectedProduct.price)}
-                </p>
-
-                <button
-                  onClick={() => {
-                    addToCart(selectedProduct);
-                    setSelectedProduct(null);
-                  }}
-                  className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-bold text-white"
-                >
-                  Add to Cart
-                </button>
-              </div>
-            </div>
-          </div>
+      <footer className="bg-slate-950 px-5 py-12 text-white">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-2xl font-black">
+            techstore<span className="text-blue-500">.</span>
+          </h2>
+          <p className="mt-3 text-slate-300">
+            Your destination for modern technology.
+          </p>
+          <p className="mt-5 text-sm text-slate-400">
+            © 2026 TechStore. All rights reserved.
+          </p>
         </div>
-      )}
-
-      {notice && (
-        <div className="fixed bottom-5 right-5 z-50 max-w-sm rounded-xl bg-slate-900 p-4 text-white shadow-xl">
-          <p>{notice}</p>
-          <button
-            onClick={() => setNotice("")}
-            className="mt-2 text-sm font-bold text-blue-300"
-          >
-            Close
-          </button>
-        </div>
-      )}
-
-      <footer className="mt-12 bg-slate-900 px-6 py-10 text-center text-slate-300">
-        <p className="text-xl font-black text-white">techstore.</p>
-        <p className="mt-3">Your destination for modern technology.</p>
-        <p className="mt-4 text-sm">© 2026 TechStore. All rights reserved.</p>
       </footer>
     </div>
+  );
+}
+
+function ProductDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const product = products.find((item) => String(item.id) === id);
+
+  if (!product) {
+    return (
+      <div className="mx-auto max-w-5xl p-10">
+        <h1 className="text-3xl font-bold">Product not found</h1>
+        <button onClick={() => navigate("/")} className="mt-5 text-blue-600">
+          Back to Store
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 px-5 py-10">
+      <div className="mx-auto max-w-6xl">
+        <button
+          onClick={() => navigate("/")}
+          className="mb-8 font-semibold text-blue-600"
+        >
+          ← Back to Store
+        </button>
+
+        <div className="grid gap-10 rounded-3xl bg-white p-8 shadow-sm md:grid-cols-2">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full rounded-2xl object-cover"
+          />
+
+          <div>
+            <p className="font-bold text-blue-600">{product.category}</p>
+            <h1 className="mt-4 text-4xl font-black">{product.name}</h1>
+            <p className="mt-5 text-slate-600">{product.description}</p>
+
+            <p className="mt-8 text-3xl font-black">
+              {money(product.price)}
+            </p>
+
+            <button
+              onClick={() => dispatch(addItem(product))}
+              className="mt-8 rounded-xl bg-blue-600 px-8 py-4 font-bold text-white"
+            >
+              Add to Cart
+            </button>
+
+            <button
+              onClick={() => navigate("/")}
+              className="ml-4 rounded-xl border px-6 py-4 font-semibold"
+            >
+              Continue Shopping
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Storefront />} />
+      <Route path="/product/:id" element={<ProductDetail />} />
+      <Route path="/checkout" element={<CheckoutPage />} />
+      <Route path="/address" element={<AddressPage />} />
+      <Route path="/payment" element={<PaymentPage />} />
+      <Route path="/order-success" element={<OrderSuccessPage />} />
+      <Route path="*" element={<Storefront />} />
+    </Routes>
   );
 }
