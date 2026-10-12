@@ -1,105 +1,149 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { products } from './data/products';
 import {
-  addItem,
   removeItem,
   increaseQty,
   decreaseQty,
   clearCart,
   selectCartItems,
-  selectCartTotalQty,
   selectCartTotalPrice,
 } from './store/cartSlice';
 
-function App() {
+export default function App() {
   const dispatch = useDispatch();
-  
   const cartItems = useSelector(selectCartItems);
-  const totalQty = useSelector(selectCartTotalQty);
   const totalPrice = useSelector(selectCartTotalPrice);
 
+  if (cartItems.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-12 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-4">
+          YOUR SHOPPING CART
+        </h1>
+        <p className="text-gray-500 mb-6">Your cart is currently empty.</p>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
-      <h1>Our Store</h1>
-      
-      {/* Cart Summary */}
-      <div style={{ background: '#f3f4f6', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-        <h2>Cart Summary</h2>
-        <p><strong>Total Items in Cart:</strong> {totalQty}</p>
-        <p><strong>Total Cart Value:</strong> R{totalPrice.toFixed(2)}</p>
-        {cartItems.length > 0 && (
-          <button 
-            onClick={() => dispatch(clearCart())}
-            style={{ padding: '0.5rem 1rem', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-          >
-            Clear Cart
-          </button>
-        )}
-      </div>
+    <div className="bg-gray-100 min-h-screen py-10 px-6 font-sans">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-8 uppercase">
+          Your Shopping Cart
+        </h1>
 
-      {/* Products Section */}
-      <h2>Products List</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        {products.map((product) => (
-          <div key={product.id} style={{ border: '1px solid #ccc', padding: '1rem', borderRadius: '8px' }}>
-            <h3>{product.name}</h3>
-            <p style={{ fontWeight: 'bold' }}>R{product.price.toFixed(2)}</p>
-            <button
-              onClick={() => dispatch(addItem(product))}
-              style={{ padding: '0.5rem 1rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-            >
-              Add to Cart
-            </button>
-          </div>
-        ))}
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          
+          {/* CART ITEMS LIST (Left side) */}
+          <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm divide-y divide-gray-100">
+            {cartItems.map((item) => (
+              <div key={item.id} className="py-6 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
+                
+                {/* Product Image & Title */}
+                <div className="flex items-center gap-4 w-2/5">
+                  <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                    <img 
+                      src={item.image || "https://via.placeholder.com/150"} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 text-base leading-snug">
+                    {item.name}
+                  </h3>
+                </div>
 
-      {/* Items in Cart */}
-      <h2>Items in Cart</h2>
-      {cartItems.length === 0 ? (
-        <p>Your cart is empty.</p>
-      ) : (
-        <ul style={{ listStyleType: 'none', padding: 0 }}>
-          {cartItems.map((item) => (
-            <li 
-              key={item.id} 
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #eee' }}
-            >
-              <div>
-                <strong>{item.name}</strong> — R{item.price.toFixed(2)} x {item.quantity}
-                <span style={{ marginLeft: '10px', color: '#666' }}>
-                  (Subtotal: R{(item.price * item.quantity).toFixed(2)})
-                </span>
-              </div>
-              
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <button 
-                  onClick={() => dispatch(decreaseQty(item.id))}
-                  style={{ width: '30px', height: '30px', cursor: 'pointer' }}
-                >
-                  -
-                </button>
-                <span>{item.quantity}</span>
-                <button 
-                  onClick={() => dispatch(increaseQty(item.id))}
-                  style={{ width: '30px', height: '30px', cursor: 'pointer' }}
-                >
-                  +
-                </button>
+                {/* Quantity Selector */}
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center border border-gray-200 rounded-full px-3 py-1">
+                    <button 
+                      onClick={() => dispatch(decreaseQty(item.id))}
+                      className="text-gray-500 hover:text-black font-bold px-2 text-lg"
+                    >
+                      –
+                    </button>
+                    <span className="px-3 font-semibold text-gray-800 text-sm">{item.quantity}</span>
+                    <button 
+                      onClick={() => dispatch(increaseQty(item.id))}
+                      className="text-gray-500 hover:text-black font-bold px-2 text-lg"
+                    >
+                      +
+                    </button>
+                  </div>
+                  {item.quantity > 1 && (
+                    <span className="text-xs text-gray-400 mt-1">
+                      {item.quantity}x R {item.price.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+
+                {/* Individual Price */}
+                <div className="text-gray-900 font-semibold text-sm">
+                  R {item.price.toLocaleString()}
+                </div>
+
+                {/* Total Price for line item */}
+                <div className="text-gray-900 font-bold text-base">
+                  R {(item.price * item.quantity).toLocaleString()}
+                </div>
+
+                {/* Remove Button */}
                 <button 
                   onClick={() => dispatch(removeItem(item.id))}
-                  style={{ marginLeft: '10px', color: 'red', cursor: 'pointer', background: 'none', border: 'none' }}
+                  className="flex items-center text-red-600 hover:text-red-800 font-semibold text-sm gap-1"
                 >
-                  Remove
+                  <span className="text-base">🗑</span> Remove
                 </button>
+
               </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            ))}
+          </div>
+
+          {/* ORDER SUMMARY SIDEBAR (Right side) */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
+
+            <div className="space-y-4 text-sm">
+              <div className="flex justify-between text-gray-700 font-medium">
+                <span>Subtotal:</span>
+                <span className="font-bold text-gray-900">R {totalPrice.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Shipping:</span>
+                <span>Calculated at checkout</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Taxes:</span>
+                <span>Calculated at checkout</span>
+              </div>
+            </div>
+
+            <hr className="my-6 border-gray-100" />
+
+            <div className="flex justify-between text-lg font-bold text-gray-900 mb-6">
+              <span>Estimated Total:</span>
+              <span>R {totalPrice.toLocaleString()}</span>
+            </div>
+
+            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-sm transition-colors text-sm uppercase tracking-wider mb-6">
+              Proceed to Checkout
+            </button>
+
+            <div className="flex justify-between items-center text-sm">
+              <button className="text-gray-900 font-semibold underline hover:text-blue-600">
+                Continue Shopping
+              </button>
+              <button 
+                onClick={() => dispatch(clearCart())}
+                className="text-gray-900 font-semibold underline hover:text-red-600"
+              >
+                Empty Cart
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }
-
-export default App;

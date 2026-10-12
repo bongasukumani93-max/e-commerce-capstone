@@ -1,45 +1,50 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-const cartSlice = createSlice({
+const initialState = {
+  cartItems: [],
+};
+
+export const cartSlice = createSlice({
   name: 'cart',
-  initialState: {
-    items: [],
-  },
+  initialState,
   reducers: {
     addItem: (state, action) => {
-      const existingItem = state.items.find(item => item.id === action.payload.id);
+      const existingItem = state.cartItems.find(item => item.id === action.payload.id);
       if (existingItem) {
         existingItem.quantity += 1;
       } else {
-        state.items.push({ ...action.payload, quantity: 1 });
+        state.cartItems.push({ ...action.payload, quantity: 1 });
       }
     },
     removeItem: (state, action) => {
-      state.items = state.items.filter(item => item.id !== action.payload);
+      state.cartItems = state.cartItems.filter(item => item.id !== action.payload);
     },
     increaseQty: (state, action) => {
-      const item = state.items.find(item => item.id === action.payload);
-      if (item) item.quantity += 1;
+      const item = state.cartItems.find(item => item.id === action.payload);
+      if (item) {
+        item.quantity += 1;
+      }
     },
     decreaseQty: (state, action) => {
-      const item = state.items.find(item => item.id === action.payload);
+      const item = state.cartItems.find(item => item.id === action.payload);
       if (item && item.quantity > 1) {
         item.quantity -= 1;
+      } else if (item && item.quantity === 1) {
+        state.cartItems = state.cartItems.filter(i => i.id !== action.payload);
       }
     },
     clearCart: (state) => {
-      state.items = [];
+      state.cartItems = [];
     },
   },
 });
 
-// MAKE SURE THIS EXPORT LINE IS AT THE BOTTOM:
 export const { addItem, removeItem, increaseQty, decreaseQty, clearCart } = cartSlice.actions;
 
-// MAKE SURE SELECTORS ARE EXPORTED TOO:
-export const selectCartItems = (state) => state.cart.items;
-export const selectCartTotalQty = (state) => 
-  state.cart.items.reduce((sum, item) => sum + item.quantity, 0);
+// Selectors
+export const selectCartItems = (state) => state.cart.cartItems;
+
 export const selectCartTotalPrice = (state) =>
-  state.cart.items.reduce((total, item) => total + item.price * item.quantity, 0);
+  state.cart.cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+
 export default cartSlice.reducer;
