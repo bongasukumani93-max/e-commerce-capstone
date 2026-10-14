@@ -142,7 +142,7 @@ function AddressPage() {
       console.error("Unable to save the default address:", error);
     }
 
-    navigate("/checkout/payment", {
+    navigate("/checkout", {
       state: {
         shippingAddress,
         saveDefault,

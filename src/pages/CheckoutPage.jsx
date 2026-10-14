@@ -1,47 +1,18 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  selectCartItems,
+  selectCartTotalPrice,
+  increaseQty,
+  decreaseQty,
+  clearCart,
+} from "../store/cartSlice";
+
 
 const ADDRESS_STORAGE_KEY = "ecommerce-default-address";
 const PAYMENT_STORAGE_KEY = "ecommerce-default-payment";
 
-const DEMO_PRODUCTS = [
-  {
-    id: "demo-laptop",
-    name: "Dell XPS 13",
-    variant: "White",
-    price: 1799.99,
-    quantity: 1,
-    image: "",
-    category: "laptop",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit ut aliquam",
-    rating: 4.5,
-  },
-  {
-    id: "demo-phone",
-    name: "iPhone 11",
-    variant: "Black",
-    price: 599.99,
-    quantity: 1,
-    image: "",
-    category: "phone",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit ut aliquam",
-    rating: 4.5,
-  },
-  {
-    id: "demo-watch",
-    name: "Smart Watch",
-    variant: "Silver",
-    price: 249.99,
-    quantity: 1,
-    image: "",
-    category: "watch",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit ut aliquam",
-    rating: 4.5,
-  },
-];
 
 const DEMO_ADDRESS = {
   shippingName: "John Maker",
@@ -65,7 +36,7 @@ function readStoredValue(key) {
 }
 
 function formatMoney(amount) {
-  return `$${Number(amount).toLocaleString("en-US", {
+  return `R${Number(amount).toLocaleString("en-ZA", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -93,15 +64,10 @@ function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [products, setProducts] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem("checkout-demo-cart");
-      return saved ? JSON.parse(saved) : DEMO_PRODUCTS;
-    } catch {
-      return DEMO_PRODUCTS;
-    }
-  });
-
+  const dispatch = useDispatch();
+const products = useSelector(selectCartItems);
+const cartTotal = useSelector(selectCartTotalPrice);
+    
   const [giftCard] = useState(GIFT_CARD_BALANCE);
   const [notice, setNotice] = useState("");
 
@@ -114,12 +80,7 @@ function CheckoutPage() {
     location.state?.paymentMethod ||
     readStoredValue(PAYMENT_STORAGE_KEY);
 
-  const subtotal = products.reduce(
-    (total, product) =>
-      total +
-      Number(product.price || 0) * Number(product.quantity || 0),
-    0
-  );
+  const subtotal = cartTotal;
 
   const estimatedGST = subtotal * ESTIMATED_TAX_RATE;
   const shipping = products.length > 0 ? SHIPPING_FEE : 0;
@@ -134,38 +95,15 @@ function CheckoutPage() {
     subtotal + shipping + estimatedGST - appliedGiftCard
   );
 
-  const updateProducts = (updatedProducts) => {
-    setProducts(updatedProducts);
-
-    try {
-      sessionStorage.setItem(
-        "checkout-demo-cart",
-        JSON.stringify(updatedProducts)
-      );
-    } catch {
-      // Keep the page usable if session storage is unavailable.
-    }
-  };
-
   const changeQuantity = (productId, amount) => {
-    setNotice("");
+  setNotice("");
 
-    const updatedProducts = products
-      .map((product) =>
-        product.id === productId
-          ? {
-              ...product,
-              quantity: Math.max(
-                0,
-                Number(product.quantity || 0) + amount
-              ),
-            }
-          : product
-      )
-      .filter((product) => product.quantity > 0);
-
-    updateProducts(updatedProducts);
-  };
+  if (amount > 0) {
+    dispatch(increaseQty(productId));
+  } else {
+    dispatch(decreaseQty(productId));
+  }
+};
 
   const handlePlaceOrder = () => {
     if (products.length === 0) {
@@ -192,10 +130,12 @@ function CheckoutPage() {
       estimatedGST,
       giftCard: appliedGiftCard,
       total: orderTotal,
-      currency: "USD",
+      currency: "ZAR",
     };
 
     // Demo order only; no real payment is processed.
+    dispatch(clearCart());
+    
     navigate("/order-success", {
       state: { order },
     });

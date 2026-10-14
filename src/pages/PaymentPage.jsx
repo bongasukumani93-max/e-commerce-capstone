@@ -430,7 +430,7 @@ function PaymentPage() {
             <div className="mt-6 flex items-center justify-between text-[10px]">
               <button
                 type="button"
-                onClick={() => navigate("/checkout/address")}
+                onClick={() => navigate("/checkout")}
                 className="text-[#1b2119] hover:underline"
               >
                 Back
