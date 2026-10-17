@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
+import { useDispatch } from "react-redux";
+import { clearCart } from "../store/cartSlice";
 const ADDRESS_STORAGE_KEY = "ecommerce-default-address";
 const PAYMENT_STORAGE_KEY = "ecommerce-default-payment";
 
@@ -44,15 +45,16 @@ const DEMO_PRODUCTS = [
 ];
 
 const DEMO_ADDRESS = {
-  shippingName: "John Maker",
-  streetName: "123 Plae Grond Street",
-  city: "Vermont",
-  state: "California",
-  country: "United States of America",
+  shippingName: "Demo Customer",
+  streetName: "123 Nelson Mandela Drive",
+  city: "Pretoria",
+  state: "Gauteng",
+  postalCode: "0002",
+  country: "South Africa",
 };
 
 const SHIPPING_FEE = 6.99;
-const ESTIMATED_TAX_RATE = 0.13;
+const ESTIMATED_TAX_RATE = 0.15;
 const GIFT_CARD_BALANCE = 0;
 
 function readStoredValue(key) {
@@ -65,10 +67,12 @@ function readStoredValue(key) {
 }
 
 function formatMoney(amount) {
-  return `$${Number(amount).toLocaleString("en-US", {
+  return new Intl.NumberFormat("en-ZA", {
+    style: "currency",
+    currency: "ZAR",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  }).format(Number(amount));
 }
 
 function ProductPlaceholder({ category }) {
@@ -92,7 +96,7 @@ function ProductPlaceholder({ category }) {
 function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-
+const dispatch = useDispatch();
   const [products, setProducts] = useState(() => {
     try {
       const saved = sessionStorage.getItem("checkout-demo-cart");
@@ -121,18 +125,18 @@ function CheckoutPage() {
     0
   );
 
-  const estimatedGST = subtotal * ESTIMATED_TAX_RATE;
+const estimatedGST = subtotal - subtotal / (1 + ESTIMATED_TAX_RATE);
   const shipping = products.length > 0 ? SHIPPING_FEE : 0;
 
-  const appliedGiftCard = Math.min(
-    Math.max(0, Number(giftCard) || 0),
-    subtotal + estimatedGST + shipping
-  );
+ const appliedGiftCard = Math.min(
+  Math.max(0, Number(giftCard) || 0),
+  subtotal + shipping
+);
 
-  const orderTotal = Math.max(
-    0,
-    subtotal + shipping + estimatedGST - appliedGiftCard
-  );
+ const orderTotal = Math.max(
+  0,
+  subtotal + shipping - appliedGiftCard
+);
 
   const updateProducts = (updatedProducts) => {
     setProducts(updatedProducts);
@@ -196,6 +200,8 @@ function CheckoutPage() {
     };
 
     // Demo order only; no real payment is processed.
+    dispatch(clearCart());
+sessionStorage.removeItem("checkout-demo-cart");
     navigate("/order-success", {
       state: { order },
     });
@@ -465,7 +471,7 @@ function CheckoutPage() {
               </div>
 
               <div className="flex justify-between gap-2">
-                <span>Estimated GST:</span>
+                <span>VAT Included (15%):</span>
                 <span className="text-right">
                   {formatMoney(estimatedGST)}
                 </span>

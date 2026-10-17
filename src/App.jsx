@@ -499,8 +499,8 @@ export default function App() {
       <Route path="/" element={<Storefront />} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/checkout" element={<CheckoutPage />} />
-      <Route path="/address" element={<AddressPage />} />
-      <Route path="/payment" element={<PaymentPage />} />
+      <Route path="/checkout/address" element={<AddressPage />} />
+      <Route path="/checkout/payment" element={<PaymentPage />} />
       <Route path="/order-success" element={<OrderSuccessPage />} />
       <Route path="*" element={<Storefront />} />
     </Routes>
